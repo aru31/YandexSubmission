@@ -48,8 +48,8 @@ FOI_hits_N
 FOI_hits_X	FOI_hits_Y	FOI_hits_Z	
 FOI_hits_DX	FOI_hits_DY	FOI_hits_DZ	
 FOI_hits_T	
-FOI_hits_DT	
-FOI_hits_S	
+FOI_hits_DT
+FOI_hits_S
 PT	
 P
 .....................Above this 
@@ -65,6 +65,30 @@ weight
 # Head
 train.head()
 test.head()
+
+closest_hits_features_train = train.swifter.apply(
+    utils.find_closest_hit_per_station, result_type="expand", axis=1)
+
+closest_hits_features_test = test.swifter.apply(
+    utils.find_closest_hit_per_station, result_type="expand", axis=1)
+
+train = train.drop(["FOI_hits_X", "FOI_hits_Y", "FOI_hits_T",
+               "FOI_hits_Z", "FOI_hits_DX", "FOI_hits_DY", "FOI_hits_DZ", "FOI_hits_DT", "FOI_hits_S"], axis=1)
+
+test = test.drop(["FOI_hits_X", "FOI_hits_Y", "FOI_hits_T",
+               "FOI_hits_Z", "FOI_hits_DX", "FOI_hits_DY", "FOI_hits_DZ", "FOI_hits_DT", "FOI_hits_S"], axis=1)
+
+train_concat = pd.concat(
+    [train.loc[:, utils.SIMPLE_FEATURE_COLUMNS],
+     closest_hits_features_train], axis=1)
+
+test_concat = pd.concat(
+    [test.loc[:, utils.SIMPLE_FEATURE_COLUMNS],
+     closest_hits_features_test], axis=1)
+
+# Saving them so as not calculate them again and again
+train_concat.to_csv('new_train.csv')
+test_concat.to_csv('new_test.csv')
 
 
 class DataFrameImputer(TransformerMixin):
@@ -94,7 +118,11 @@ class DataFrameImputer(TransformerMixin):
         return X.fillna(self.fill)
 
 
-train = DataFrameImputer().fit_transform(train)
+train_concat = DataFrameImputer().fit_transform(train_concat)
+test_concat = DataFrameImputer().fit_transform(test_concat)
+
+abs_weights = pd.DataFrame(np.abs(train.weight))
+label = pd.DataFrame(train['label'])
 
 # check for relation between features now
 def heatMap(df, mirror):
@@ -142,15 +170,6 @@ for i in range(train.corr().shape[0]):
 
 selected_columns = train.columns[columns]
 dataset_new = train[selected_columns]
-
-closest_hits_features = train.swifter.apply(
-    utils.find_closest_hit_per_station, result_type="expand", axis=1)
-
-train_concat = pd.concat(
-    [train.loc[:, utils.SIMPLE_FEATURE_COLUMNS],
-     closest_hits_features], axis=1)
-
-abs_weights = np.abs(train.weight)
 
 model = catboost.CatBoostClassifier(iterations=550, max_depth=8, thread_count=16, verbose=False)
 

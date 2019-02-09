@@ -2,6 +2,7 @@ import os
 from itertools import repeat
 import numpy as np
 import pandas as pd
+import re
 
 SIMPLE_FEATURE_COLUMNS = ['ncl[0]', 'ncl[1]', 'ncl[2]', 'ncl[3]', 'avg_cs[0]',
        'avg_cs[1]', 'avg_cs[2]', 'avg_cs[3]', 'ndof', 'MatchedHit_TYPE[0]',
@@ -24,14 +25,14 @@ SIMPLE_FEATURE_COLUMNS = ['ncl[0]', 'ncl[1]', 'ncl[2]', 'ncl[3]', 'avg_cs[0]',
 
 TRAIN_COLUMNS = ["label", "weight"]
 
-FOI_COLUMNS = ["FOI_hits_X", "FOI_hits_Y", "FOI_hits_T",
-               "FOI_hits_Z", "FOI_hits_DX", "FOI_hits_DY", "FOI_hits_S"]
+FOI_COLUMNS = ["FOI_hits_X", "FOI_hits_Y", "FOI_hits_T", "FOI_hits_Z",
+               "FOI_hits_DX", "FOI_hits_DY", "FOI_hits_DZ", "FOI_hits_S", "FOI_hits_DT"]
 
 ID_COLUMN = "id"
 
 # Given 4 staions in problem itself
 N_STATIONS = 4
-FEATURES_PER_STATION = 6
+FEATURES_PER_STATION = 8
 N_FOI_FEATURES = N_STATIONS*FEATURES_PER_STATION
 # The value to use for stations with missing hits
 # when computing FOI features
@@ -81,15 +82,36 @@ def find_closest_hit_per_station(row):
     closest_z_per_station = result[12:16]
     closest_dx_per_station = result[16:20]
     closest_dy_per_station = result[20:24]
-
+    closest_dz_per_station = result[24:28]
+    closest_dt_per_station = result[28:32]
+    
     for station in range(4):
         count = 0
         new_row = row['FOI_hits_S'][1: -1].split(" ")
-        
+        row_x = row['FOI_hits_X'][1: -1].split(" ")
+        row_y = row['FOI_hits_Y'][1: -1].split(" ")
+        row_z = row['FOI_hits_Z'][1: -1].split(" ")
+        row_t = row['FOI_hits_T'][1: -1].split(" ")
+        row_dx = row['FOI_hits_DX'][1: -1].split(" ")
+        row_dy = row['FOI_hits_DY'][1: -1].split(" ")
+        row_dz = row['FOI_hits_DZ'][1: -1].split(" ")
+        row_dt = row['FOI_hits_DT'][1: -1].split(" ")
+        row_x = list(filter(None, row_x))
+        row_y = list(filter(None, row_y))
+        row_z = list(filter(None, row_z))
+        row_t = list(filter(None, row_t))
+        row_dx = list(filter(None, row_dx))
+        row_dy = list(filter(None, row_dy))
+        row_dz = list(filter(None, row_dz))
+        row_dt = list(filter(None, row_dt))
+        hit_index = []
+        flag_count = 0
         for hit in new_row:
-            hits = ((hit) == station)
+            flag_count = flag_count + 1
+            hits = (int(hit) == station)
             if hits:
                 count = count + 1
+                hit_index.append(flag_count-1)
         if count==0:
             closest_x_per_station[station] = EMPTY_FILLER
             closest_y_per_station[station] = EMPTY_FILLER
@@ -97,15 +119,27 @@ def find_closest_hit_per_station(row):
             closest_z_per_station[station] = EMPTY_FILLER
             closest_dx_per_station[station] = EMPTY_FILLER
             closest_dy_per_station[station] = EMPTY_FILLER
+            closest_dz_per_station[station] = EMPTY_FILLER
+            closest_dt_per_station[station] = EMPTY_FILLER
         else:
-            x_distances_2 = (row["Lextra_X[%i]" % station] - row["FOI_hits_X"][hits])**2
-            y_distances_2 = (row["Lextra_Y[%i]" % station] - row["FOI_hits_Y"][hits])**2
-            distances_2 = x_distances_2 + y_distances_2
+            x_distances_2 = []
+            y_distances_2 = []
+            for numi in hit_index:
+                x2 = (float(row["Lextra_X[%i]" % station]) - float(row_x[int(numi)]))**2
+                x_distances_2.append(x2)
+            x_distances_2 = np.array(x_distances_2)
+            for numj in hit_index:
+                y2 = (float(row["Lextra_Y[%i]" % station]) - float(row_y[int(numj)]))**2
+                y_distances_2.append(y2)
+            y_distances_2 = np.array(y_distances_2)
+            distances_2 = (x_distances_2 + y_distances_2)
             closest_hit = np.argmin(distances_2)
             closest_x_per_station[station] = x_distances_2[closest_hit]
             closest_y_per_station[station] = y_distances_2[closest_hit]
-            closest_T_per_station[station] = row["FOI_hits_T"][hits][closest_hit]
-            closest_z_per_station[station] = row["FOI_hits_Z"][hits][closest_hit]
-            closest_dx_per_station[station] = row["FOI_hits_DX"][hits][closest_hit]
-            closest_dy_per_station[station] = row["FOI_hits_DY"][hits][closest_hit]
+            closest_T_per_station[station] = row_t[closest_hit]
+            closest_z_per_station[station] = row_z[closest_hit]
+            closest_dx_per_station[station] = row_dx[closest_hit]
+            closest_dy_per_station[station] = row_dy[closest_hit]
+            closest_dz_per_station[station] = row_dz[closest_hit]
+            closest_dt_per_station[station] = row_dt[closest_hit]
     return result

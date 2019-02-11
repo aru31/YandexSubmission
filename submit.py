@@ -290,6 +290,7 @@ pca_new_3 = PCA(n_components=1, random_state=0)
 pca_new_4 = PCA(n_components=1, random_state=0)
 pca_new_5 = PCA(n_components=1, random_state=0)
 pca_new_6 = PCA(n_components=1, random_state=0)
+pca_new_7 = PCA(n_components=1, random_state=0)
 
 ran1 = pd.DataFrame(pca_new_1.fit_transform(train[['MatchedHit_X[0]', 'MatchedHit_X[1]', 'MatchedHit_X[2]', 'MatchedHit_X[3]']]))
 ran1.columns = [0]
@@ -303,7 +304,8 @@ ran5 = pd.DataFrame(pca_new_5.fit_transform(train[['Lextra_X[0]', 'Lextra_X[1]',
 ran5.columns = [4]
 ran6 = pd.DataFrame(pca_new_6.fit_transform(train[['Lextra_Y[0]', 'Lextra_Y[1]', 'Lextra_Y[2]', 'Lextra_Y[3]']]))
 ran6.columns = [5]
-random_array_train = pd.concat([ran1, ran2, ran3, ran4, ran5, ran6], axis=1)
+rand7 = pd.DataFrame(pca_new_7.fit_transform(dataset[['Mextra_DX2[0]', 'Mextra_DX2[1]', 'Mextra_DX2[2]', 'Mextra_DX2[3]', 'Mextra_DY2[0]', 'Mextra_DY2[1]', 'Mextra_DY2[2]', 'Mextra_DY2[3]']]))
+random_array_train = pd.concat([ran1, ran2, ran3, ran4, ran5, ran6, ran7], axis=1)
 
 rant1 = pd.DataFrame(pca_new_1.transform(test[['MatchedHit_X[0]', 'MatchedHit_X[1]', 'MatchedHit_X[2]', 'MatchedHit_X[3]']]))
 rant1.columns = [0]
@@ -326,6 +328,7 @@ train['new_var3'] = random_array_train[2]
 train['new_var4'] = random_array_train[3]
 train['new_var5'] = random_array_train[4]
 train['new_var6'] = random_array_train[5]
+train['new_var7'] = random_array_train[6]
 
 test['new_var1'] = random_array_test[0]
 test['new_var2'] = random_array_test[1]
@@ -333,6 +336,7 @@ test['new_var3'] = random_array_test[2]
 test['new_var4'] = random_array_test[3]
 test['new_var5'] = random_array_test[4]
 test['new_var6'] = random_array_test[5]
+test['new_var7'] = random_array_test[6]
 
 
 """

@@ -2,7 +2,6 @@ import os
 from itertools import repeat
 import numpy as np
 import pandas as pd
-import re
 
 SIMPLE_FEATURE_COLUMNS = ['ncl[0]', 'ncl[1]', 'ncl[2]', 'ncl[3]', 'avg_cs[0]',
        'avg_cs[1]', 'avg_cs[2]', 'avg_cs[3]', 'ndof', 'MatchedHit_TYPE[0]',
@@ -55,7 +54,7 @@ def load_data_csv():
                     usecols= [ID_COLUMN] + SIMPLE_FEATURE_COLUMNS + FOI_COLUMNS + TRAIN_COLUMNS,
                     index_col=ID_COLUMN)
         for i in (1, 2)], axis=0, ignore_index=True)
-    test = pd.read_csv('test/output_1.csv',
+    test = pd.read_csv('test_public_v2.csv',
                        usecols=[ID_COLUMN] + SIMPLE_FEATURE_COLUMNS + FOI_COLUMNS, index_col=ID_COLUMN)
     return train, test
 

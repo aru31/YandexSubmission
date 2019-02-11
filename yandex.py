@@ -2,20 +2,25 @@ import os
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import random
 import seaborn as sns
 import utils
 import metric
 import catboost
 import swifter
 import warnings
+import re
 warnings.filterwarnings("ignore")
 
 from sklearn.base import TransformerMixin
 from sklearn.preprocessing import LabelEncoder, OneHotEncoder
+from sklearn.metrics import confusion_matrix
 from sklearn.model_selection import train_test_split
+from sklearn.model_selection import KFold
 from sklearn.svm import SVC
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
+from itertools import repeat
 
 %matplotlib inline
 
@@ -95,6 +100,8 @@ test = DataFrameImputer().fit_transform(test)
 scale_weights = scaling_weights(10, train['weight'])
 label = pd.DataFrame(train['label'])
 
+train = train.drop(['weight', 'label'], axis=1)
+
 # check for relation between features now
 def heatMap(df, mirror):
 
@@ -122,8 +129,8 @@ def heatMap(df, mirror):
     plt.show()
 
 # To Chack the heat Mops
-heatMap(train, False)
-heatMap(test, False)
+# heatMap(train, False)
+# heatMap(test, False)
 
 """
 From here starts the whole preprocessing task.
@@ -267,10 +274,33 @@ test = pd.read_csv('new_test.csv')
 # Scaling takes place here
 sc = StandardScaler()
 train = sc.fit_transform(train)
-test = sc.transform(test)
+test = sc.transform(test) 
+
+# Validation to determine accuracy by two methods
+## Train Test Split 80-20%
+train_new, val_new, train_label, val_label, scale_train, scale_test = train_test_split(train, label, scale_weights, test_size=0.2)
 
 # Finally the training Part
 model = catboost.CatBoostClassifier(iterations=550, max_depth=8, verbose=False)
 model.fit(train, label, sample_weight=scale_weights, plot=True)
 
-y_pred = model.predict(test)
+# y_val_pred = model.predict(val_new)
+
+# confusion matrix
+# cm = confusion_matrix(val_label, y_val_pred)
+
+# Test Data Prediction
+model.probability = True
+predAns = model.predict_proba(test)[:, 1]
+
+
+# Submission
+submission=pd.read_csv("sample_submission.csv")
+
+# Fill the is_pass variable with the predictions
+submission['prediction'] = predAns
+
+
+# Converting the submission file to csv format
+submission.to_csv('my_submission.csv', index=False)
+
